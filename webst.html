@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>websocket</title>
+    <style>
+        * {
+            margin: 0;
+            padding:0;
+        }
+        .container {
+            width: 300px;   
+            margin: 90px auto;
+            border: 1px solid black;
+        }
+        #com {
+            width: 300px;
+            height: 500px;
+            overflow-y: scroll;
+        }
+        #com p {
+            margin:10px 0;
+            padding: 0 5px;
+        }
+        .container .title {
+            text-align: center;
+            font-size:20px;
+            border-bottom: 1px solid black;
+        }
+        .container .bottom {
+            padding: 10px 10px; 
+            border-top: 1px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .container .bottom input {
+            width: 220px;
+            height: 20px;
+        }
+        .container .bottom button {
+            width: 50px;
+            height: 25px;
+        }
+        .me {
+            background: skyblue;
+        }
+        .bottom-login {
+            width: 300px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+        }
+    </style>
+</head>
+<body>
+   <div class="container">
+        <p class="title">聊天工具</p>
+        <div id="com"></div>
+        <div class='bottom'>
+            <input type="text" id="ipt"/>
+            <button id="btn" >发送</button>
+        </div>
+   </div>
+   <div class='bottom-login'>
+       <button class="loginBtn" data-user-id="123">登录用户1</button>
+       <button class="loginBtn" data-user-id="456">登录用户2</button>
+   </div>
+</body>
+<script>
+    window.addEventListener('keydown', function(e){
+        if(e.keyCode == 13){
+            document.getElementById('btn').click();
+        }
+    })
+    const loginBtns = document.getElementsByClassName('loginBtn');
+    [...loginBtns].map(res => {
+        res.onclick = function() {
+            location.href =  `${location.pathname.slice(1)}?userId=${res.dataset.userId}`;
+        }
+    })
+    const userId = location.search.slice(1).split('=')[1]
+    if ("WebSocket" in window){
+        var ws = new WebSocket(`ws://127.0.0.1:8001/${userId}`);
+        console.log(ws)
+        ws.onopen = function(e){
+            console.log("连接服务器成功");
+            const btn = document.getElementById('btn');
+
+            btn.addEventListener('click', ()=>{
+                const ipt = document.getElementById('ipt');
+                ws.send(ipt.value);
+                var me = document.createElement('p');
+                me.setAttribute('class','me');
+                me.innerHTML = `Me: ${ipt.value}`
+                document.getElementById('com').appendChild(me);
+                ipt.value = '';
+            })
+
+
+        }
+        ws.onclose = function(e){
+            console.log("服务器关闭");
+        }
+        ws.onerror = function(){
+            console.log("连接出错");
+        }
+
+        ws.onmessage = function(e){
+            var time = new Date();
+            console.log(e.data)
+            if(e.data == 'Heartbeat') return;
+            var service = document.createElement('p');
+            service.innerHTML = `Service: ${e.data}`
+            document.getElementById('com').appendChild(service);
+            document.getElementById('com').scrollTop = document.getElementById('com').scrollHeight;
+
+        }
+    } else {
+        console.log('您的浏览器不支持websocket')
+    }
+
+</script>
+</html>
